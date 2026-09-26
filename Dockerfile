@@ -24,4 +24,4 @@ COPY --from=builder /app/services ./services
 USER node
 EXPOSE 3000
 
-CMD ["node", "./node_modules/tsx/dist/cli.mjs", "server.ts"]
+CMD ["npm", "start"]
