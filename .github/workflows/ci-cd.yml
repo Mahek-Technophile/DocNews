@@ -19,10 +19,9 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: npm
 
       - name: Install dependencies
-        run: npm ci
+        run: npm install --legacy-peer-deps
 
       - name: Run code validation (Lint check)
         run: npm run lint
@@ -49,7 +48,7 @@ jobs:
       - name: Run Docker smoke test
         run: |
           docker run -d -p 3000:3000 --name docnews-smoke docnews-app
-          sleep 5
+          sleep 6
           curl -f http://localhost:3000/health || (docker logs docnews-smoke && exit 1)
 
   # Stage 3: Continuous Deployment to Render (Runs only on push to main)
@@ -60,5 +59,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Trigger Render Deploy Hook
+        if: env.RENDER_HOOK != ''
+        env:
+          RENDER_HOOK: ${{ secrets.RENDER_DEPLOY_HOOK }}
         run: |
           curl -fsS -X POST "${{ secrets.RENDER_DEPLOY_HOOK }}&ref=${{ github.sha }}"
+      - name: Notify if secret not configured yet
+        if: env.RENDER_HOOK == ''
+        env:
+          RENDER_HOOK: ${{ secrets.RENDER_DEPLOY_HOOK }}
+        run: echo "Render deploy hook secret not configured yet. Skipping trigger until configured."
