@@ -1,0 +1,64 @@
+name: DOCNEWS CI/CD Pipeline
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  # Stage 1: Continuous Integration (Lint & Automated Tests)
+  test:
+    name: Lint & Automated Test Suite
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run code validation (Lint check)
+        run: npm run lint
+
+      - name: Run automated test suite (node:test)
+        run: npm test
+
+  # Stage 2: Docker Container Build & Smoke Test
+  build:
+    name: Docker Container Build & Smoke Test
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Docker container image
+        run: |
+          docker build --build-arg GIT_SHA=${{ github.sha }} -t docnews-app .
+
+      - name: Run Docker smoke test
+        run: |
+          docker run -d -p 3000:3000 --name docnews-smoke docnews-app
+          sleep 5
+          curl -f http://localhost:3000/health || (docker logs docnews-smoke && exit 1)
+
+  # Stage 3: Continuous Deployment to Render (Runs only on push to main)
+  deploy:
+    name: Deploy to Render Cloud
+    needs: build
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Render Deploy Hook
+        run: |
+          curl -fsS -X POST "${{ secrets.RENDER_DEPLOY_HOOK }}&ref=${{ github.sha }}"
