@@ -1,29 +1,27 @@
-FROM node:22-alpine
-
-# Set working directory inside container
+# Stage 1: Build frontend assets
+FROM node:22-alpine AS builder
 WORKDIR /app
-
-# Copy dependency manifests
 COPY package*.json ./
-
-# Install dependencies
-RUN npm install --omit=dev --legacy-peer-deps
-
-# Copy all source files
+RUN npm install --legacy-peer-deps
 COPY . .
-
-# Build Vite frontend assets into dist/
 RUN npx vite build
 
-# Argument to pass Git SHA during CI build
-ARG GIT_SHA=local
-ENV RENDER_GIT_COMMIT=$GIT_SHA PORT=3000 NODE_ENV=production
+# Stage 2: Production runner
+FROM node:22-alpine AS runner
+WORKDIR /app
+ENV NODE_ENV=production PORT=3000
 
-# Switch to non-root node user for container security
+COPY package*.json ./
+RUN npm install --omit=dev --legacy-peer-deps
+
+# Copy built frontend assets and server files
+COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/server.ts ./
+COPY --from=builder /app/api.ts ./
+COPY --from=builder /app/services ./services
+
+# Non-root user for security
 USER node
-
-# Expose server port
 EXPOSE 3000
 
-# Start server using tsx
 CMD ["node", "./node_modules/tsx/dist/cli.mjs", "server.ts"]
