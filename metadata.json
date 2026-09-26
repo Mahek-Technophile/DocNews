@@ -1,0 +1,6 @@
+{
+  "name": "DOCNEWS — Document to Newsletter Converter",
+  "description": "Dynamic web application built for Cloud Computing and DevOps (CSE30040) converting Word docs, Markdown, and text into styled newsletters with CI/CD pipeline.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
