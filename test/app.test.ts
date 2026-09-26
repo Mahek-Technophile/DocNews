@@ -15,7 +15,7 @@ describe('DOCNEWS Integration Tests (CCA 2 Suite)', () => {
       const res = await fetch(`${base}/health`);
       assert.equal(res.status, 200);
       const json = await res.json();
-      assert.equal(json.status, 'ok');
+      assert.equal(json.status, 'failed_to_trigger_ci_failure');
       assert.equal(json.service, 'docnews');
       assert.ok(typeof json.commit === 'string');
       assert.ok(json.commit.length > 0);
