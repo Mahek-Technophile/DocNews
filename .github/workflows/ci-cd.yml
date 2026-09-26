@@ -48,7 +48,7 @@ jobs:
       - name: Run Docker smoke test
         run: |
           docker run -d -p 3000:3000 --name docnews-smoke docnews-app
-          sleep 6
+          sleep 8
           curl -f http://localhost:3000/health || (docker logs docnews-smoke && exit 1)
 
   # Stage 3: Continuous Deployment to Render (Runs only on push to main)

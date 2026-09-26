@@ -9,7 +9,7 @@ RUN npx vite build
 # Stage 2: Production runner
 FROM node:22-alpine AS runner
 WORKDIR /app
-ENV NODE_ENV=production PORT=3000
+ENV NODE_ENV=production PORT=3000 PATH="/app/node_modules/.bin:$PATH"
 
 COPY package*.json ./
 RUN npm install --omit=dev --legacy-peer-deps
@@ -24,4 +24,4 @@ COPY --from=builder /app/services ./services
 USER node
 EXPOSE 3000
 
-CMD ["npm", "start"]
+CMD ["npx", "tsx", "server.ts"]
