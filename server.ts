@@ -1,54 +1,30 @@
-import express from 'express';
+import { app, getCommitSha } from './api.ts';
 import { createServer as createViteServer } from 'vite';
-import { apiRouter } from './api';
 import path from 'path';
 
+const PORT = Number(process.env.PORT) || 3000;
+
 async function startServer() {
-  const app = express();
-  const PORT = process.env.PORT || 3000;
-  const isProd = process.env.NODE_ENV === 'production';
-
-  // Body parsing middleware
-  app.use(express.json({ limit: '10mb' }));
-  app.use(express.urlencoded({ extended: true, limit: '10mb' }));
-
-  // API router MUST be mounted before frontend handlers
-  app.use('/api', apiRouter);
-
-  // Health check endpoint
-  app.get('/health', (req, res) => {
-    res.json({
-      status: 'healthy',
-      service: 'docnews-backend',
-      timestamp: new Date().toISOString(),
-      uptimeSeconds: Math.floor(process.uptime()),
-      gitSha: process.env.RENDER_GIT_COMMIT || process.env.GIT_SHA || '85a7c0d',
-      nodeVersion: process.version
-    });
-  });
-
-  if (!isProd) {
-    // Development mode: attach Vite dev server middleware
+  if (process.env.NODE_ENV !== 'production') {
+    // Mount Vite middleware in development mode
     const vite = await createViteServer({
       server: { middlewareMode: true },
       appType: 'spa',
     });
     app.use(vite.middlewares);
   } else {
-    // Production mode: serve built assets from dist
+    // Serve static build assets in production mode
     const distPath = path.resolve(process.cwd(), 'dist');
-    app.use(express.static(distPath));
-    app.get('*', (req, res) => {
+    app.use((await import('express')).default.static(distPath));
+    app.get('*', (_req, res) => {
       res.sendFile(path.join(distPath, 'index.html'));
     });
   }
 
-  app.listen(PORT, () => {
-    console.log(`DOCNEWS server running on http://localhost:${PORT}`);
+  app.listen(PORT, '0.0.0.0', () => {
+    console.log(`[DOCNEWS] Server running on http://localhost:${PORT}`);
+    console.log(`[DOCNEWS] Git Commit SHA: ${getCommitSha()}`);
   });
 }
 
-startServer().catch((err) => {
-  console.error('Failed to start server:', err);
-  process.exit(1);
-});
+startServer();
