@@ -138,6 +138,24 @@ export function parsePlainTextOrMarkdown(
     wordCount,
     readingTimeMinutes,
   };
+
+}
+/**
+ * Validates document file extension and returns human-readable summary stats.
+ */
+export function getDocumentStats(filename: string, text: string) {
+  const ext = filename.split('.').pop()?.toLowerCase() || '';
+  const supported = ['docx', 'md', 'markdown', 'txt'].includes(ext);
+  const words = text.trim() ? text.trim().split(/\s+/).length : 0;
+  const estimatedReadMinutes = Math.max(1, Math.ceil(words / 200));
+
+  return {
+    filename,
+    extension: ext,
+    isSupported: supported,
+    wordCount: words,
+    estimatedReadMinutes
+  };
 }
 
 /**
@@ -149,3 +167,4 @@ export async function parseDocxBuffer(buffer: Buffer): Promise<ParsedDocument> {
   const parsed = parsePlainTextOrMarkdown(rawText, 'docx');
   return parsed;
 }
+
